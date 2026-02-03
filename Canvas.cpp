@@ -21,7 +21,10 @@ void DrawRect(QPainter* painter, const Rect& rec)
 
 void DrawArc(QPainter* painter, const Arc& a)
 {
-	painter->drawArc(a.m_center.m_x - a.m_rad, (a.m_center.m_y - a.m_rad), a.m_rad * 2, a.m_rad * 2, -a.m_start * 16 * 180 / PI, -(a.m_end - a.m_start) * 16 * 180 / PI);
+	double across = a.m_end - a.m_start;
+	if (a.m_start > a.m_end)
+		across += 2 * PI;
+	painter->drawArc(a.m_center.m_x - a.m_rad, (a.m_center.m_y - a.m_rad), a.m_rad * 2, a.m_rad * 2, -a.m_start * 16 * 180 / PI, -across * 16 * 180 / PI);
 }
 
 void Canvas::paintEvent(QPaintEvent * event)
@@ -32,16 +35,18 @@ void Canvas::paintEvent(QPaintEvent * event)
 	painter.scale(1, -1);
 	double h = height();
 
-	double s = 150;
-	double e = 290;
-	Vec2 c(500, 150);
-	double r = 100;
-	Arc arc(c, r, s*PI/180, e*PI/180);
-	DrawArc(&painter, arc);
+	//double s = 150;
+	//double e = 290;
+	//Vec2 c(500, 150);
+	//double r = 100;
+	//Arc arc(c, r, s*PI/180, e*PI/180);
+	//DrawArc(&painter, arc);
 
-	
-	Rect rec = GetBBox(arc);
-	DrawRect(&painter, rec);
+	//
+	//Rect rec = GetBBox(arc);
+	//DrawRect(&painter, rec);
 
-
+	ArcRect rec1(50, { 200,200 }, 80, -PI * 0.5, PI * 0.8);
+	for (auto& a : rec1.m_edges)
+		DrawArc(&painter, a);
 }

@@ -1,6 +1,7 @@
 #include "GeomUtils.h"
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 
 
 
@@ -145,20 +146,24 @@ Vec2 Arc::GetEndPoint() const
 
 ArcRect::ArcRect(double cir_rad, const Vec2& swing_center, double swing_rad, double swing_start, double swing_end)
 {
+    if (swing_start < 0)
+        swing_start += 2 * PI;
+    if (swing_end < 0)
+        swing_end += 2 * PI;
     if (Greater(swing_rad, cir_rad))
     {
         m_edges.resize(4);
         {
             double sangle = swing_start - PI;
             double eangle = sangle + PI;
-            Vec2 pos = RotateBy(Vec2(swing_center.m_x + swing_rad, 0), swing_center, swing_start);
+            Vec2 pos = RotateBy(swing_center + Vec2(swing_rad, 0), swing_center, swing_start);
             Arc arc(pos, cir_rad, sangle, eangle);
             m_edges[2] = arc;
         }
         {
             double eangle = swing_end - PI;
-            double sangle = sangle - PI;
-            Vec2 pos = RotateBy(Vec2(swing_center.m_x + swing_rad, 0), swing_center, swing_start);
+            double sangle = eangle - PI;
+            Vec2 pos = RotateBy(swing_center + Vec2(swing_rad, 0), swing_center, swing_end);
             Arc arc(pos, cir_rad, sangle, eangle);
             m_edges[0] = arc;
         }
@@ -177,6 +182,58 @@ ArcRect::ArcRect(double cir_rad, const Vec2& swing_center, double swing_rad, dou
         Arc bot(swing_center, swing_rad + cir_rad, swing_start, swing_end);
         m_edges[2] = bot;
 
+        Vec2 s_cirpos = RotateBy(Vec2(swing_center.m_x + swing_rad, swing_center.m_y), swing_center, swing_start);
+        Vec2 e_cirpos = RotateBy(Vec2(swing_center.m_x + swing_rad, swing_center.m_y), swing_center, swing_end);
+        Circle s_cir(s_cirpos, cir_rad);
+        Circle e_cir(e_cirpos, cir_rad);
 
+        auto res = CircleIntersect(s_cir, e_cir);
+        if (res.size() != 2)
+            assert(false);
+
+        double across = swing_end - swing_start;
+        if (across < 0)
+            across += 2 * PI;
+        Vec2 mid = RotateBy(s_cirpos, swing_center, across * 0.5);
+        Vec2 top_pos;
+        if ((res[0] - swing_center).Dot(mid) < 0)
+            top_pos = res[0];
+        else if ((res[1] - swing_center).Dot(mid) < 0)
+            top_pos = res[1];
+        else
+            assert(false);
+
+        {
+            double sangle = std::atan2(top_pos.m_y - s_cirpos.m_y, top_pos.m_x - s_cirpos.m_x);
+            double eangle = swing_start;
+            m_edges[1] = Arc(s_cirpos, cir_rad, sangle, eangle);
+        }
+
+        {
+            double eangle = std::atan2(top_pos.m_y - e_cirpos.m_y, top_pos.m_x - e_cirpos.m_x);
+            double sangle = swing_end;
+            m_edges[0] = Arc(e_cirpos, cir_rad, sangle, eangle);
+        }
     }
 }
+
+Vec2 Vec2::operator+(const Vec2& other) const
+{
+    return Vec2(m_x + other.m_x, m_y + other.m_y);
+}
+
+Vec2 Vec2::operator-(const Vec2& other) const
+{
+    return Vec2(m_x - other.m_x, m_y - other.m_y);
+}
+
+Vec2 Vec2::operator*(double d) const
+{
+    return Vec2(m_x * d, m_y * d);
+}
+
+double Vec2::Dot(const Vec2& other)
+{
+    return m_x * other.m_x + m_y * other.m_y;
+}
+

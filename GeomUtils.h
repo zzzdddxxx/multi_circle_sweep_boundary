@@ -17,6 +17,12 @@ struct Vec2
 
 	Vec2(){}
 	Vec2(double x, double y) :m_x(x), m_y(y) { }
+
+	Vec2 operator+(const Vec2& other) const;
+	Vec2 operator-(const Vec2& other) const;
+	Vec2 operator*(double d) const;
+
+	double Dot(const Vec2& other);
 };
 
 struct Arc
